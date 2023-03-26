@@ -93,10 +93,7 @@ async def command_fuel_filter(message: types.Message):
         if admin_keyboard.choice_action == 'add_goods':
             await cm_start(message)
         elif admin_keyboard.choice_action == 'del_goods':
-            try:
-                await delete_goods(message)
-            except:
-                print('Ошибка')
+            await delete_goods(message)
         # await callback.answer('Выбран топливный фильтр')
 
 
