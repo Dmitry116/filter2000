@@ -10,6 +10,7 @@ from aiogram.dispatcher.filters import Text
 ID = None
 
 
+
 class FSM_admin(StatesGroup):
     photo = State()
     name = State()
@@ -27,58 +28,75 @@ async def comand_start(message: types.Message):
 
 async def command_add_goods(callback: types.callback_query):
     if callback.from_user.id == ID:
+        admin_keyboard.choice_action = 'add_goods'
         await bot.delete_message(callback.from_user.id, callback.message.message_id)
         await bot.send_message(callback.from_user.id, 'Что желаете добавить, господин?', \
                                reply_markup=admin_keyboard.admin_buttons_menu_second_level)
 
 
+
 async def command_del_goods(callback: types.callback_query):
     if callback.from_user.id == ID:
+        admin_keyboard.choice_action  = 'del_goods'
         await bot.delete_message(callback.from_user.id, callback.message.message_id)
         await bot.send_message(callback.from_user.id, 'Что желаете удалить, господин?', \
                                reply_markup=admin_keyboard.admin_buttons_menu_second_level)
 
 
 
-async def process_filter_choice(callback_query: CallbackQuery, callback_data: dict):
-    if callback_query.from_user.id == ID:
-        filter_type = callback_data.get('filter_type')
-        action = callback_data.get('action')
+# async def process_filter_choice(callback_query: CallbackQuery, callback_data: dict):
+#     if callback_query.from_user.id == ID:
+#         filter_type = ''
+#
+#
+#         if filter_type == 'air filter':
+#             sqlite_db.price_list = 'air_filter'
+#             sqlite_db.sql_start()
+#
+#             # if commands == 'load_data':
+#             #     await cm_start(callback_query)
+#             # elif action == 'delete_data':
+#             #     await command_del_goods('air_filter.csv')
+#         # elif filter_type == 'oil filter':
+#         #     if action == 'load_data':
+#         #         command_add_goods('oil_filter.csv')
+#         #     elif action == 'delete_data':
+#         #         command_del_goods('oil_filter.csv')
+#         # elif filter_type == 'fuel filter':
+#         #     if action == 'load_data':
+#         #         command_add_goods('fuel_filter.csv')
+#         #     elif action == 'delete_data':
+#         #         command_del_goods('fuel_filter.csv')
+#         # elif filter_type == 'Add goods':  # добавляем условие для опции "Добавить товар"
+#         #     if action == 'load_goods':
+#         #         command_add_goods()
+#         else:
+#             print('Invalid choice!')
+#
+#         await bot.answer_callback_query(callback_query.id)
 
-        if action == 'load_goods':
-            if filter_type == 'air_filter':
-                sqlite_db.price_list = 'air_filter'
-                await bot.send_message(callback_query.from_user.id, 'OKOKOKOKOKO')
-        #         await command_add_goods('air_filter', callback_query.from_user.id)
-        #     elif filter_type == 'fuel_filter':
-        #         await command_add_goods('fuel_filter', callback_query.from_user.id)
-        #     elif filter_type == 'oil_filter':
-        #         await command_add_goods('oil_filter', callback_query.from_user.id)
-        #
-        # elif action == 'delete_goods':
-        #     if filter_type == 'air_filter':
-        #         await command_del_goods('air_filter', callback_query.from_user.id)
-        #     elif filter_type == 'fuel_filter':
-        #         await command_del_goods('fuel_filter', callback_query.from_user.id)
-        #     elif filter_type == 'oil_filter':
-        #         await command_del_goods('oil_filter', callback_query.from_user.id)
-
-        await bot.answer_callback_query(callback_query.id)
-
-# async def command_air_filter(callback: types.callback_query):
-#     if callback.from_user.id == ID:
-#         sqlite_db.price_list = 'air_filter'
-#         sqlite_db.sql_start()
-        # await cm_start(message)
-        # await callback.answer('Выбран воздушный фильтр')
+async def command_air_filter(message: types.Message):
+    if message.from_user.id == ID:
+        sqlite_db.price_list = 'air_filter'
+        sqlite_db.sql_start()
+        if admin_keyboard.choice_action  == 'add_goods':
+            await cm_start(message)
+        elif admin_keyboard.choice_action  == 'del_goods':
+            await delete_goods(message)
+        # await message.answer('Выбран воздушный фильтр')
 
 
 async def command_fuel_filter(message: types.Message):
     if message.from_user.id == ID:
         sqlite_db.price_list = 'fuel_filter'
-
         sqlite_db.sql_start()
-        await cm_start(message)
+        if admin_keyboard.choice_action == 'add_goods':
+            await cm_start(message)
+        elif admin_keyboard.choice_action == 'del_goods':
+            try:
+                await delete_goods(message)
+            except:
+                print('Ошибка')
         # await callback.answer('Выбран топливный фильтр')
 
 
@@ -86,7 +104,10 @@ async def command_oil_filter(message: types.Message):
     if message.from_user.id == ID:
         sqlite_db.price_list = 'oil_filter'
         sqlite_db.sql_start()
-        await cm_start(message)
+        if admin_keyboard.choice_action == 'add_goods':
+            await cm_start(message)
+        elif admin_keyboard.choice_action == 'del_goods':
+            await delete_goods(message)
         # await callback.answer('Выбран масляный фильтр')
 
 
@@ -102,8 +123,8 @@ async def command_back(callback: types.callback_query):
 
 async def cm_start(message: types.Message):
     if message.from_user.id == ID:
-        await FSM_admin.photo.set()
         await message.answer('Загрузите фото')
+        await FSM_admin.photo.set()
 
 
 """Загружаем фото товара"""
@@ -167,8 +188,7 @@ async def delete_goods(message: types.Message):
             await bot.send_photo(message.from_user.id, ret[0], f'{ret[1]}'
                                                                f'\nОписание: {ret[2]}'
                                                                f'\nЦена: {ret[-1]}')
-            await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup(). \
-                                   add(InlineKeyboardButton(f'Удалить {ret[1]}', callback_data=f'del {ret[1]}')))
+            await bot.send_message(message.from_user.id, text='^^^', reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(f'Удалить {ret[1]}', callback_data=f'del {ret[1]}')))
 
 
 """Тут надо доделать выбор двух кнопок"""
@@ -182,7 +202,13 @@ def register_handler_admin(dp: Dispatcher):
     dp.register_message_handler(comand_start, commands='moderator', is_chat_admin=True)
     dp.register_callback_query_handler(command_add_goods, lambda x: x.data == 'load_goods')
     dp.register_callback_query_handler(command_del_goods, lambda x: x.data == 'delete_goods')
-    # dp.register_callback_query_handler(command_air_filter, text='air_filter')
+    # dp.register_callback_query_handler(process_filter_choice, text='choice_filter')
+
+
+
+
+
+    dp.register_callback_query_handler(command_air_filter, text='air_filter')
     dp.register_callback_query_handler(command_fuel_filter, text='fuel_filter')
     dp.register_callback_query_handler(command_oil_filter, text='oil_filter')
     dp.register_callback_query_handler(command_back, text='button_back')
